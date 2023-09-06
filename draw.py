@@ -29,5 +29,5 @@ with cairo.SVGSurface("example.svg", WIDTH, HEIGHT) as surface:
     str = "\n\n\n\n\n\n\n\n\n\n\nIn Java, BufferedReader is a class can be used to read text from a character input stream. It belongs to the java.io package. It buffers the input, that is, it stores the input characters in an internal buffer from which the data can be read. This is more efficient than directly reading the data from the input stream. To use BufferedReader to read an input stream, we need to use the following syntax. If we want to use BufferedReader to read input given by user from the console, we need to make an InputStreamReader from the input stream System.in The following code demonstrates how we can do the above"
 
     writer = TypeWriter(ctx, MARGIN_LEFT, FIRST_LINE_Y, WIDTH-MARGIN_RIGHT, LINE_HEIGHT)
-    writer.type(str.lower().replace('.', ' ').replace("'", '').replace(',', ''))
+    writer.type("The Quick Brown Fox Jumped Over The Lazy Dog")
     
