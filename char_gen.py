@@ -6,65 +6,90 @@ import random
 import re
 
 LETTER_SPACING = 12
-RANDOMNESS_SCALE = 0 # 1.6
+RANDOMNESS_SCALE = 2
 LINE_WIDTH = 0.8
-MIN_LINE_WIDTH = 0.4
-MAX_LINE_WIDTH = 1
+MIN_LINE_WIDTH = 0.6
+MAX_LINE_WIDTH = 0.9
 LETTER_HEIGHT = 14
+AVG_LETTER_WIDTH = 11
 
-LETTER_WIDTHS = {'a':10, 
-                 'b':7, 
-                 'c':11, 
-                 'd':7, 
-                 'e':9.5, 
-                 'f':6, 
-                 'g':7, 
-                 'h':7, 
-                 'i':3,
-                 'j':2, 
-                 'k':5.5, 
-                 'l':3, 
-                 'm':10, 
-                 'n':7, 
-                 'o':8, 
-                 'p':10, 
-                 'q':8, 
-                 'r':10, 
-                 's':7, 
-                 't':6, 
-                 'u':8, 
-                 'v':8, 
-                 'w':8, 
-                 'x':10, 
-                 'y':7, 
-                 'z':9,
-                 'A':10,
-                 'B':10,
-                 'C':11,
-                 'D':10,
-                 'E':9,
-                 'F':9,
-                 'G':12,
-                 'H':8,
-                 'I':2,
-                 'J':9,
-                 'K':9,
-                 'L':8.5,
-                 'M':9,
-                 'N':8,
-                 'O':12,
-                 'P':8,
-                 'Q':11,
-                 'R':8,
-                 'S':10,
-                 'T':9,
-                 'U':12,
-                 'V':10,
-                 'W':12,
-                 'X':13,
-                 'Y':8,
-                 'Z':14}
-CAPITAL_LETTER_WIDTHS = []
+LETTER_WIDTHS = {'a':9, 
+                 'b':6, 
+                 'c':10, 
+                 'd':6, 
+                 'e':8.5, 
+                 'f':5, 
+                 'g':6, 
+                 'h':6, 
+                 'i':2,
+                 'j':1, 
+                 'k':4.5, 
+                 'l':2, 
+                 'm':9, 
+                 'n':6, 
+                 'o':7, 
+                 'p':9, 
+                 'q':7, 
+                 'r':9, 
+                 's':6, 
+                 't':5, 
+                 'u':7, 
+                 'v':7, 
+                 'w':7, 
+                 'x':9, 
+                 'y':6, 
+                 'z':8,
+                 'A':9,
+                 'B':9,
+                 'C':10,
+                 'D':9,
+                 'E':8,
+                 'F':8,
+                 'G':11,
+                 'H':7,
+                 'I':1,
+                 'J':8,
+                 'K':8,
+                 'L':7.5,
+                 'M':8,
+                 'N':7,
+                 'O':11,
+                 'P':7,
+                 'Q':10,
+                 'R':7,
+                 'S':9,
+                 'T':8,
+                 'U':11,
+                 'V':9,
+                 'W':11,
+                 'X':12,
+                 'Y':7,
+                 'Z':13,
+                 '0':9,
+                 '1':3,
+                 '2':9,
+                 '3':7,
+                 '4':9,
+                 '5':7.5,
+                 '6':7,
+                 '7':6,
+                 '8':7,
+                 '9':6,
+                 '.':3,
+                 ',':3,
+                 "'": 3,
+                 ';':3,
+                 '-':9,
+                 ':':3,
+                 '\n':0,
+                 }
+
+SPECIAL_CHARS = {".": "period",
+                 ",": "comma",
+                 "'": "apostrophe",
+                 ";":"semicolon",
+                 '-':"hyphen",
+                 ":": "colon"}
 
 class TypeWriter:
     def __init__(self, ctx, START_X, START_Y, X_LIMIT, LINE_HEIGHT):
@@ -141,51 +166,72 @@ class TypeWriter:
     # Moves to coords relative to init_x and init_y. Also flips y so you don't have to care about -14
     def move_to_relative(self, init_x, init_y, x, y):
         self.x = init_x+x+self.random()
-        self.y = init_y+(-LETTER_HEIGHT+y)+self.random()
+        self.y = init_y+(-LETTER_HEIGHT+y)+self.random()*2
         self.update_point()
 
     def update_point(self):
         self.ctx.move_to(self.x, self.y)
 
+    def next_line(self):
+        self.x = self.START_X
+        self.y += self.LINE_HEIGHT
+        self.ctx.move_to(self.x, self.y)
+
+    def space_bar(self):
+        self.x += LETTER_SPACING + abs(self.random()*3)
+
     def type(self, string):
-        for ch in string:
-            if ch == '\n':
-                self.x = self.START_X
-                self.y += self.LINE_HEIGHT
-                self.ctx.move_to(self.x, self.y)
-                continue
-            if ch == ' ':
-                self.x += LETTER_SPACING + self.random()*3
-
-            try:
-                if ch >= 'A' and ch <= 'Z':
-                    doc = minidom.parse(f'letters/{ch}2.svg')  # parseString also exists
-                else:
-                    doc = minidom.parse(f'letters/{ch}.svg')  # parseString also exists
-            except:
-                print(f"Letter {ch} file not found")
-            
-            
-            path_strings = [path.getAttribute('d') for path in doc.getElementsByTagName('path')]
-            doc.unlink()
-
-            init_x, init_y = self.x, self.y
-            for path in path_strings:
-                if len(re.split(' |,', path)) >= 12:
-                    self.execute2(init_x, init_y, path)
-                else:
-                    self.execute(init_x, init_y, path)
-            self.x = init_x
-            self.y = init_y
-
-            if ch != ' ':
+        words = string.split(' ')
+        for word in words:
+            init_x = self.x
+            for ch in word:
                 try:
-                    self.x += LETTER_WIDTHS[ch] + self.random()*3
+                    init_x += LETTER_WIDTHS[ch]
                 except:
-                    pass
-            if self.x > self.X_LIMIT:
-                self.x = self.START_X
-                self.y += self.LINE_HEIGHT
+                    print(f"Letter width for {ch} not found.")
+            if init_x >= self.X_LIMIT:
+                self.next_line()
 
-            self.ctx.move_to(self.x, self.y)
-            self.prev_char = ch
+            for ch in word:
+                if ch == '\n':
+                    self.next_line()
+                    continue
+                if ch == ' ':
+                    self.space_bar()
+                    continue                    
+                try:
+                    if ch >= 'A' and ch <= 'Z':
+                        doc = minidom.parse(f'letters/{ch}2.svg')
+                    elif ch >= 'a' and ch <= 'z' or ch >= '0' and ch <= '9':
+                        doc = minidom.parse(f'letters/{ch}.svg')
+                    else:
+                        doc = minidom.parse(f'letters/{SPECIAL_CHARS[ch]}.svg')
+                except:
+                    print(f"Letter {ch} file not found")
+                
+                
+                path_strings = [path.getAttribute('d') for path in doc.getElementsByTagName('path')]
+                doc.unlink()
+
+                init_x, init_y = self.x, self.y + self.small_random()*3
+                for path in path_strings:
+                    if len(re.split(' |,', path)) >= 12:
+                        self.execute2(init_x, init_y, path)
+                    else:
+                        self.execute(init_x, init_y, path)
+                self.x = init_x
+                self.y = init_y
+
+                if ch != ' ':
+                    try:
+                        self.x += LETTER_WIDTHS[ch] + abs(self.random())
+                    except:
+                        pass
+                
+                if self.x > self.X_LIMIT:
+                    self.x = self.START_X
+                    self.y += self.LINE_HEIGHT
+
+                self.ctx.move_to(self.x, self.y)
+                self.prev_char = ch
+            self.space_bar()
